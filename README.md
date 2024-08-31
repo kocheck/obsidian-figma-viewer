@@ -1,7 +1,8 @@
 # Obsidian Figma Embed Plugin
 
 <!-- ![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22obsidian-figma-embed%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json) -->
-![GitHub license](https://img.shields.io/github/license/kocheck/obsidian-figma-embed)
+![GitHub license](https://img.shields.io/github/license/kocheck/Figma-Viewer)
+
 
 The Obsidian Figma Embed plugin allows you to seamlessly integrate Figma designs into your Obsidian notes. Simply paste a Figma link, and the plugin will automatically generate an inline preview, making your design workflow smoother and more visual.
 
