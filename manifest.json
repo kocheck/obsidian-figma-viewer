@@ -5,6 +5,6 @@
 	"minAppVersion": "0.15.0",
 	"description": "Embed Figma files as inline previews in Obsidian.",
 	"author": "Kyle Kochanek",
-	"authorUrl": "https://github.com/kocheck/Figma-Viewer",
+	"authorUrl": "https://github.com/kocheck/obsidian-figma-viewer",
 	"isDesktopOnly": false
   }
