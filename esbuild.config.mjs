@@ -15,7 +15,7 @@ esbuild
 		banner: {
 			js: banner,
 		},
-		entryPoints: ["main.ts"], // Ensure this path is correct
+		entryPoints: ["src/main.ts"], // Updated to point to the src directory
 		bundle: true,
 		external: [
 			"@codemirror/lint",
@@ -24,7 +24,7 @@ esbuild
 			"@codemirror/view",
 			"@lezer/common",
 			"@lezer/highlight",
-			"obsidian", // Ensure this is correct if it should be external
+			"obsidian",
 			// other external modules...
 		],
 		format: "cjs",
@@ -32,6 +32,6 @@ esbuild
 		logLevel: "info",
 		sourcemap: prod ? false : "inline",
 		treeShaking: true,
-		outfile: "main.js",
+		outfile: "build/main.js", // Updated to output to the build directory
 	})
 	.catch(() => process.exit(1));
