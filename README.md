@@ -33,4 +33,5 @@ The Obsidian Figma Embed plugin allows you to seamlessly integrate Figma designs
 1. Copy a Figma link (e.g., https://www.figma.com/file/...)
 2. Paste the link into your Obsidian note.
 3. The plugin will automatically convert the link into an embedded preview.
+4. Switch to Read mode in Obsidian to view and interact with the embedded Figma design.
 
