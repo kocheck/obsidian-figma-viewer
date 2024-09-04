@@ -16,9 +16,10 @@ export default class FigmaEmbedPlugin extends Plugin {
 			iframe.src = `https://www.figma.com/embed?embed_host=obsidian&url=${encodeURIComponent(
 				figmaUrl
 			)}`;
-			iframe.style.width = "100%";
-			iframe.style.height = "450px";
-			iframe.style.border = "none";
+			iframe.classList.add("figmaembed-iframe");
+			// iframe.style.width = "100%";
+			// iframe.style.height = "450px";
+			// iframe.style.border = "none";
 
 			link.parentNode?.replaceChild(iframe, link);
 		});

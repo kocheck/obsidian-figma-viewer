@@ -6,3 +6,8 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+.figmaembed-iframe {
+	width: 100%;
+	height: 450px;
+	border: none;
+  }
