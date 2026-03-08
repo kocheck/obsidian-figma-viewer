@@ -80,7 +80,7 @@ export default class FigmaEmbedPlugin extends Plugin {
      * Parse a human-readable file name from a Figma URL.
      * E.g. "https://www.figma.com/design/abc123/My-Cool-Design?..." -> "My Cool Design"
      */
-    parseFigmaFileName(url: string): string {
+    private parseFigmaFileName(url: string): string {
         try {
             const pathname = new URL(url).pathname;
             const segments = pathname.split("/").filter(Boolean);
@@ -97,7 +97,7 @@ export default class FigmaEmbedPlugin extends Plugin {
      * Parse the file type from a Figma URL path segment.
      * E.g. "/design/..." -> "Design File", "/proto/..." -> "Prototype"
      */
-    parseFigmaFileType(url: string): string {
+    private parseFigmaFileType(url: string): string {
         const typeMap: Record<string, string> = {
             file: "Design File",
             design: "Design File",
