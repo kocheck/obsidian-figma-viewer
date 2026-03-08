@@ -81,17 +81,17 @@ export default class FigmaEmbedPlugin extends Plugin {
                     if (event.origin !== "https://www.figma.com") return;
                     if (event.source !== iframe.contentWindow) return;
 
-                    let data = event.data;
-                    if (typeof data === "string") {
-                        try { data = JSON.parse(data); } catch { return; }
-                    }
+                    const data = event.data;
 
-                    if (data?.type === "EMBED_LOADED" || data?.type === "INITIAL_LOAD_COMPLETE") {
+                    // Figma sends plain strings (e.g. "INITIAL_LOAD") or JSON objects
+                    const eventType = typeof data === "string" ? data : data?.type;
+
+                    if (eventType === "INITIAL_LOAD" || eventType === "EMBED_LOADED") {
                         clearTimeout(fallbackTimeout);
                         iframe.style.display = "";
                         fallback.classList.remove("is-visible");
                         window.removeEventListener("message", messageHandler);
-                    } else if (data?.type === "LOGIN_SCREEN_SHOWN") {
+                    } else if (eventType === "LOGIN_SCREEN_SHOWN") {
                         clearTimeout(fallbackTimeout);
                         iframe.style.display = "none";
                         fallback.classList.add("is-visible");
