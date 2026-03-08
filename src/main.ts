@@ -1,6 +1,8 @@
 import { Plugin, MarkdownPostProcessorContext } from "obsidian";
 
 export default class FigmaEmbedPlugin extends Plugin {
+    private messageHandlers: Array<(event: MessageEvent) => void> = [];
+
     async onload() {
         // This part stays the same - it registers the post processor
         this.registerMarkdownPostProcessor(this.figmaEmbedProcessor.bind(this));
@@ -49,24 +51,63 @@ export default class FigmaEmbedPlugin extends Plugin {
 
             // If the URL matches a pattern that suggests it's embeddable based on its structure
             if (isEmbeddableUrl) {
-                // Create the iframe using the hardcoded embed URL structure.
-                // This happens unconditionally for matching links.
+                const fileName = this.parseFigmaFileName(figmaUrl);
+                const fileType = this.parseFigmaFileType(figmaUrl);
+
+                // Create container
+                const container = document.createElement("div");
+                container.classList.add("figmaembed-container");
+
+                // Create iframe
                 const iframe = document.createElement("iframe");
                 iframe.src = `https://www.figma.com/embed?embed_host=obsidian&url=${encodeURIComponent(
                     figmaUrl
                 )}`;
-
-                // Add class and styles for the iframe
                 iframe.classList.add("figmaembed-iframe");
-                iframe.style.width = "100%";
-                iframe.style.height = "450px"; // Adjust as needed
-                iframe.style.border = "none";
                 iframe.setAttribute("allowfullscreen", "true");
 
-                // Replace the original link with the iframe
-                link.parentNode?.replaceChild(iframe, link);
+                // Create fallback card (uses safe DOM methods, no innerHTML)
+                const fallback = this.createFallbackCard(fileName, fileType, figmaUrl);
 
-                // console.log(`Attempting embed for pattern match: ${figmaUrl}`); // Optional log
+                container.appendChild(iframe);
+                container.appendChild(fallback);
+
+                // Replace the original link with the container
+                link.parentNode?.replaceChild(container, link);
+
+                // Listen for postMessage from Figma embed
+                const messageHandler = (event: MessageEvent) => {
+                    if (event.origin !== "https://www.figma.com") return;
+
+                    let data = event.data;
+                    if (typeof data === "string") {
+                        try { data = JSON.parse(data); } catch { return; }
+                    }
+
+                    if (data?.type === "EMBED_LOADED" || data?.type === "INITIAL_LOAD_COMPLETE") {
+                        clearTimeout(fallbackTimeout);
+                        iframe.style.display = "";
+                        fallback.classList.remove("is-visible");
+                        window.removeEventListener("message", messageHandler);
+                    } else if (data?.type === "LOGIN_SCREEN_SHOWN") {
+                        clearTimeout(fallbackTimeout);
+                        iframe.style.display = "none";
+                        fallback.classList.add("is-visible");
+                        window.removeEventListener("message", messageHandler);
+                    }
+                };
+
+                window.addEventListener("message", messageHandler);
+                this.messageHandlers.push(messageHandler);
+
+                // Safety net: if no message in 5s, show fallback
+                const fallbackTimeout = setTimeout(() => {
+                    if (!fallback.classList.contains("is-visible") && iframe.style.display !== "none") {
+                        iframe.style.display = "none";
+                        fallback.classList.add("is-visible");
+                        window.removeEventListener("message", messageHandler);
+                    }
+                }, 5000);
             } else {
                 // If the URL does NOT match the STRICTER pattern, do nothing.
                 // It remains a standard text link instantly.
@@ -75,6 +116,63 @@ export default class FigmaEmbedPlugin extends Plugin {
             }
         });
     } // <- END of figmaEmbedProcessor content
+
+    private createFallbackCard(fileName: string, fileType: string, figmaUrl: string): HTMLElement {
+        const fallback = document.createElement("div");
+        fallback.classList.add("figmaembed-fallback");
+
+        // Figma logo (static SVG, no user content)
+        const iconDiv = document.createElement("div");
+        iconDiv.classList.add("figmaembed-fallback-icon");
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 38 57");
+        svg.setAttribute("fill", "none");
+        const paths = [
+            { d: "M19 28.5C19 23.2533 23.2533 19 28.5 19C33.7467 19 38 23.2533 38 28.5C38 33.7467 33.7467 38 28.5 38C23.2533 38 19 33.7467 19 28.5Z", fill: "#1ABCFE" },
+            { d: "M0 47.5C0 42.2533 4.25329 38 9.5 38H19V47.5C19 52.7467 14.7467 57 9.5 57C4.25329 57 0 52.7467 0 47.5Z", fill: "#0ACF83" },
+            { d: "M19 0V19H28.5C33.7467 19 38 14.7467 38 9.5C38 4.25329 33.7467 0 28.5 0H19Z", fill: "#FF7262" },
+            { d: "M0 9.5C0 14.7467 4.25329 19 9.5 19H19V0H9.5C4.25329 0 0 4.25329 0 9.5Z", fill: "#F24E1E" },
+            { d: "M0 28.5C0 33.7467 4.25329 38 9.5 38H19V19H9.5C4.25329 19 0 23.2533 0 28.5Z", fill: "#A259FF" },
+        ];
+        for (const p of paths) {
+            const path = document.createElementNS(svgNS, "path");
+            path.setAttribute("d", p.d);
+            path.setAttribute("fill", p.fill);
+            svg.appendChild(path);
+        }
+        iconDiv.appendChild(svg);
+        fallback.appendChild(iconDiv);
+
+        // File name (textContent — safe from XSS)
+        const nameDiv = document.createElement("div");
+        nameDiv.classList.add("figmaembed-fallback-filename");
+        nameDiv.textContent = fileName;
+        fallback.appendChild(nameDiv);
+
+        // File type
+        const typeDiv = document.createElement("div");
+        typeDiv.classList.add("figmaembed-fallback-filetype");
+        typeDiv.textContent = fileType;
+        fallback.appendChild(typeDiv);
+
+        // Message
+        const msgDiv = document.createElement("div");
+        msgDiv.classList.add("figmaembed-fallback-message");
+        msgDiv.textContent = "This file is private. Open it in your browser to view.";
+        fallback.appendChild(msgDiv);
+
+        // Open button
+        const btn = document.createElement("a");
+        btn.classList.add("figmaembed-fallback-button");
+        btn.href = figmaUrl;
+        btn.target = "_blank";
+        btn.rel = "noopener noreferrer";
+        btn.textContent = "Open in Figma";
+        fallback.appendChild(btn);
+
+        return fallback;
+    }
 
     /**
      * Parse a human-readable file name from a Figma URL.
@@ -120,8 +218,10 @@ export default class FigmaEmbedPlugin extends Plugin {
         }
     }
 
-    // This part stays the same
     async onunload() {
-        // Clean up logic if needed
+        this.messageHandlers.forEach(handler => {
+            window.removeEventListener("message", handler);
+        });
+        this.messageHandlers = [];
     }
 }
