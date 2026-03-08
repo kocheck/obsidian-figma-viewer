@@ -145,19 +145,25 @@ export default class FigmaEmbedPlugin extends Plugin {
             svg.appendChild(path);
         }
         iconDiv.appendChild(svg);
-        fallback.appendChild(iconDiv);
+
+        // Header group: icon + filename + type chip
+        const header = document.createElement("div");
+        header.classList.add("figmaembed-fallback-header");
+        header.appendChild(iconDiv);
 
         // File name (textContent — safe from XSS)
         const nameDiv = document.createElement("div");
         nameDiv.classList.add("figmaembed-fallback-filename");
         nameDiv.textContent = fileName;
-        fallback.appendChild(nameDiv);
+        header.appendChild(nameDiv);
 
-        // File type
-        const typeDiv = document.createElement("div");
+        // File type chip
+        const typeDiv = document.createElement("span");
         typeDiv.classList.add("figmaembed-fallback-filetype");
         typeDiv.textContent = fileType;
-        fallback.appendChild(typeDiv);
+        header.appendChild(typeDiv);
+
+        fallback.appendChild(header);
 
         // Message
         const msgDiv = document.createElement("div");
