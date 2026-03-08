@@ -2,6 +2,7 @@ import { Plugin, MarkdownPostProcessorContext } from "obsidian";
 
 export default class FigmaEmbedPlugin extends Plugin {
     private messageHandlers: Array<(event: MessageEvent) => void> = [];
+    private fallbackTimeouts: ReturnType<typeof setTimeout>[] = [];
 
     async onload() {
         // This part stays the same - it registers the post processor
@@ -78,6 +79,7 @@ export default class FigmaEmbedPlugin extends Plugin {
                 // Listen for postMessage from Figma embed
                 const messageHandler = (event: MessageEvent) => {
                     if (event.origin !== "https://www.figma.com") return;
+                    if (event.source !== iframe.contentWindow) return;
 
                     let data = event.data;
                     if (typeof data === "string") {
@@ -101,13 +103,14 @@ export default class FigmaEmbedPlugin extends Plugin {
                 this.messageHandlers.push(messageHandler);
 
                 // Safety net: if no message in 5s, show fallback
-                const fallbackTimeout = setTimeout(() => {
+                const fallbackTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
                     if (!fallback.classList.contains("is-visible") && iframe.style.display !== "none") {
                         iframe.style.display = "none";
                         fallback.classList.add("is-visible");
                         window.removeEventListener("message", messageHandler);
                     }
                 }, 5000);
+                this.fallbackTimeouts.push(fallbackTimeout);
             } else {
                 // If the URL does NOT match the STRICTER pattern, do nothing.
                 // It remains a standard text link instantly.
@@ -218,10 +221,12 @@ export default class FigmaEmbedPlugin extends Plugin {
         }
     }
 
-    async onunload() {
+    onunload() {
         this.messageHandlers.forEach(handler => {
             window.removeEventListener("message", handler);
         });
         this.messageHandlers = [];
+        this.fallbackTimeouts.forEach(id => clearTimeout(id));
+        this.fallbackTimeouts = [];
     }
 }
