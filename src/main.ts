@@ -55,15 +55,14 @@ export default class FigmaEmbedPlugin extends Plugin {
 
         const { name: fileName, type: fileType } = this.parseFigmaFileInfo(figmaUrl);
 
-        const container = document.createElement("div");
-        container.classList.add("figmaembed-container");
-
-        const iframe = document.createElement("iframe");
-        iframe.src = `${FIGMA_ORIGIN}/embed?embed_host=obsidian&url=${encodeURIComponent(figmaUrl)}`;
-        iframe.classList.add("figmaembed-iframe");
-        iframe.setAttribute("allowfullscreen", "true");
-
-        container.appendChild(iframe);
+        const container = createDiv({ cls: "figmaembed-container" });
+        const iframe = container.createEl("iframe", {
+            cls: "figmaembed-iframe",
+            attr: {
+                src: `${FIGMA_ORIGIN}/embed?embed_host=obsidian&url=${encodeURIComponent(figmaUrl)}`,
+                allowfullscreen: "true",
+            },
+        });
 
         const parent = link.parentNode;
         if (!parent) return;
@@ -132,53 +131,31 @@ export default class FigmaEmbedPlugin extends Plugin {
     }
 
     private createFallbackCard(fileName: string, fileType: string, figmaUrl: string): HTMLElement {
-        const fallback = document.createElement("div");
-        fallback.classList.add("figmaembed-fallback");
+        const fallback = createDiv({ cls: "figmaembed-fallback" });
 
         // Figma logo (static SVG, no user content)
-        const iconDiv = document.createElement("div");
-        iconDiv.classList.add("figmaembed-fallback-icon");
-        const svgNS = "http://www.w3.org/2000/svg";
-        const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttribute("viewBox", "0 0 38 57");
-        svg.setAttribute("fill", "none");
+        const iconDiv = fallback.createDiv({ cls: "figmaembed-fallback-icon" });
+        const svg = iconDiv.createSvg("svg", { attr: { viewBox: "0 0 38 57", fill: "none" } });
         for (const p of FIGMA_LOGO_PATHS) {
-            const path = document.createElementNS(svgNS, "path");
-            path.setAttribute("d", p.d);
-            path.setAttribute("fill", p.fill);
-            svg.appendChild(path);
+            svg.createSvg("path", { attr: { d: p.d, fill: p.fill } });
         }
-        iconDiv.appendChild(svg);
 
-        const header = document.createElement("div");
-        header.classList.add("figmaembed-fallback-header");
+        const header = fallback.createDiv({ cls: "figmaembed-fallback-header" });
         header.appendChild(iconDiv);
+        // File name (text — safe from XSS via Obsidian's createDiv)
+        header.createDiv({ cls: "figmaembed-fallback-filename", text: fileName });
+        header.createSpan({ cls: "figmaembed-fallback-filetype", text: fileType });
 
-        // File name (textContent — safe from XSS)
-        const nameDiv = document.createElement("div");
-        nameDiv.classList.add("figmaembed-fallback-filename");
-        nameDiv.textContent = fileName;
-        header.appendChild(nameDiv);
-
-        const typeDiv = document.createElement("span");
-        typeDiv.classList.add("figmaembed-fallback-filetype");
-        typeDiv.textContent = fileType;
-        header.appendChild(typeDiv);
-
-        fallback.appendChild(header);
-
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add("figmaembed-fallback-message");
-        msgDiv.textContent = "Unable to load this embed. The file may be private, or the connection timed out.";
-        fallback.appendChild(msgDiv);
-
-        const btn = document.createElement("a");
-        btn.classList.add("figmaembed-fallback-button");
-        btn.href = figmaUrl;
-        btn.target = "_blank";
-        btn.rel = "noopener noreferrer";
-        btn.textContent = "Open in Figma";
-        fallback.appendChild(btn);
+        fallback.createDiv({
+            cls: "figmaembed-fallback-message",
+            text: "Unable to load this embed. The file may be private, or the connection timed out.",
+        });
+        fallback.createEl("a", {
+            cls: "figmaembed-fallback-button",
+            text: "Open in Figma",
+            href: figmaUrl,
+            attr: { target: "_blank", rel: "noopener noreferrer" },
+        });
 
         return fallback;
     }
