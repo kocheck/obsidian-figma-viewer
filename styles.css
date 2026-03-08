@@ -24,7 +24,7 @@ If your plugin does not need CSS, delete this file.
     justify-content: center;
     gap: 16px;
     min-height: 450px;
-    padding: 40px 40px;
+    padding: 40px;
     box-sizing: border-box;
     border: 1px solid var(--background-modifier-border);
     border-radius: 8px;
