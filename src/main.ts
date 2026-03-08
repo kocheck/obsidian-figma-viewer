@@ -76,6 +76,50 @@ export default class FigmaEmbedPlugin extends Plugin {
         });
     } // <- END of figmaEmbedProcessor content
 
+    /**
+     * Parse a human-readable file name from a Figma URL.
+     * E.g. "https://www.figma.com/design/abc123/My-Cool-Design?..." -> "My Cool Design"
+     */
+    parseFigmaFileName(url: string): string {
+        try {
+            const pathname = new URL(url).pathname;
+            const segments = pathname.split("/").filter(Boolean);
+            if (segments.length >= 3) {
+                return decodeURIComponent(segments[2]).replace(/-/g, " ");
+            }
+            return "Figma File";
+        } catch {
+            return "Figma File";
+        }
+    }
+
+    /**
+     * Parse the file type from a Figma URL path segment.
+     * E.g. "/design/..." -> "Design File", "/proto/..." -> "Prototype"
+     */
+    parseFigmaFileType(url: string): string {
+        const typeMap: Record<string, string> = {
+            file: "Design File",
+            design: "Design File",
+            proto: "Prototype",
+            board: "FigJam Board",
+            slides: "Slides",
+            deck: "Slide Deck",
+            buzz: "Buzz",
+            site: "Figma Site",
+        };
+        try {
+            const pathname = new URL(url).pathname;
+            const segments = pathname.split("/").filter(Boolean);
+            if (segments.length >= 1) {
+                return typeMap[segments[0]] || "Figma File";
+            }
+            return "Figma File";
+        } catch {
+            return "Figma File";
+        }
+    }
+
     // This part stays the same
     async onunload() {
         // Clean up logic if needed
