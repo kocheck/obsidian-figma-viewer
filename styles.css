@@ -1,29 +1,22 @@
-/*
-
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
 .figmaembed-container {
+    --figmaembed-height: 450px;
     position: relative;
     width: 100%;
 }
 
 .figmaembed-container .figmaembed-iframe {
     width: 100%;
-    height: 450px;
+    height: var(--figmaembed-height);
     border: none;
 }
 
-.figmaembed-fallback {
+.figmaembed-container .figmaembed-fallback {
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    min-height: 450px;
+    min-height: var(--figmaembed-height);
     padding: 40px;
     box-sizing: border-box;
     border: 1px solid var(--background-modifier-border);
@@ -32,23 +25,23 @@ If your plugin does not need CSS, delete this file.
     text-align: center;
 }
 
-.figmaembed-fallback.is-visible {
+.figmaembed-container .figmaembed-fallback.is-visible {
     display: flex;
 }
 
-.figmaembed-fallback-icon svg {
+.figmaembed-container .figmaembed-fallback-icon svg {
     width: 36px;
     height: 36px;
 }
 
-.figmaembed-fallback-header {
+.figmaembed-container .figmaembed-fallback-header {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 8px;
 }
 
-.figmaembed-fallback-filename {
+.figmaembed-container .figmaembed-fallback-filename {
     font-size: var(--font-ui-large);
     font-weight: 600;
     color: var(--text-normal);
@@ -58,7 +51,7 @@ If your plugin does not need CSS, delete this file.
     white-space: nowrap;
 }
 
-.figmaembed-fallback-filetype {
+.figmaembed-container .figmaembed-fallback-filetype {
     display: inline-block;
     font-size: var(--font-ui-smaller);
     color: var(--text-muted);
@@ -70,14 +63,14 @@ If your plugin does not need CSS, delete this file.
     letter-spacing: 0.02em;
 }
 
-.figmaembed-fallback-message {
+.figmaembed-container .figmaembed-fallback-message {
     font-size: var(--font-ui-small);
     color: var(--text-faint);
     max-width: 500px;
     margin-top: 4px;
 }
 
-.figmaembed-fallback-button {
+.figmaembed-container .figmaembed-fallback-button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -93,7 +86,7 @@ If your plugin does not need CSS, delete this file.
     margin-top: 4px;
 }
 
-.figmaembed-fallback-button:hover {
+.figmaembed-container .figmaembed-fallback-button:hover {
     background-color: var(--interactive-accent-hover);
     text-decoration: none;
     color: var(--text-on-accent);

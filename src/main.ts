@@ -1,5 +1,6 @@
 import { Plugin, MarkdownPostProcessorContext } from "obsidian";
 
+const FIGMA_ORIGIN = "https://www.figma.com";
 const FALLBACK_TIMEOUT_MS = 15000;
 
 const FIGMA_LOGO_PATHS = [
@@ -10,16 +11,7 @@ const FIGMA_LOGO_PATHS = [
     { d: "M0 28.5C0 33.7467 4.25329 38 9.5 38H19V19H9.5C4.25329 19 0 23.2533 0 28.5Z", fill: "#A259FF" },
 ];
 
-const EMBEDDABLE_PATTERNS = [
-    /\/file\/[^\/]+/,
-    /\/design\/[^\/]+/,
-    /\/proto\/[^\/]+/,
-    /\/board\/[^\/]+/,
-    /\/slides\/[^\/]+/,
-    /\/deck\/[^\/]+/,
-    /\/buzz\/[^\/]+/,
-    /\/site\/[^\/]+/,
-];
+const EMBEDDABLE_PATTERN = /\/(file|design|proto|board|slides|deck|buzz|site)\/[^\/]+/;
 
 const FILE_TYPE_MAP: Record<string, string> = {
     file: "Design File",
@@ -45,7 +37,7 @@ export default class FigmaEmbedPlugin extends Plugin {
      */
     figmaEmbedProcessor(el: HTMLElement, ctx: MarkdownPostProcessorContext) {
         const figmaLinks = el.querySelectorAll(
-            'a[href^="https://www.figma.com/"]'
+            `a[href^="${FIGMA_ORIGIN}/"]`
         );
 
         figmaLinks.forEach((link: HTMLAnchorElement) => {
@@ -59,9 +51,7 @@ export default class FigmaEmbedPlugin extends Plugin {
 
     private processLink(link: HTMLAnchorElement) {
         const figmaUrl = link.href;
-        const isEmbeddableUrl = EMBEDDABLE_PATTERNS.some(pattern => pattern.test(figmaUrl));
-
-        if (!isEmbeddableUrl) return;
+        if (!EMBEDDABLE_PATTERN.test(figmaUrl)) return;
 
         const { name: fileName, type: fileType } = this.parseFigmaFileInfo(figmaUrl);
 
@@ -69,46 +59,55 @@ export default class FigmaEmbedPlugin extends Plugin {
         container.classList.add("figmaembed-container");
 
         const iframe = document.createElement("iframe");
-        iframe.src = `https://www.figma.com/embed?embed_host=obsidian&url=${encodeURIComponent(figmaUrl)}`;
+        iframe.src = `${FIGMA_ORIGIN}/embed?embed_host=obsidian&url=${encodeURIComponent(figmaUrl)}`;
         iframe.classList.add("figmaembed-iframe");
         iframe.setAttribute("allowfullscreen", "true");
 
-        // Create fallback card (uses safe DOM methods, no innerHTML)
-        const fallback = this.createFallbackCard(fileName, fileType, figmaUrl);
-
         container.appendChild(iframe);
-        container.appendChild(fallback);
 
         const parent = link.parentNode;
         if (!parent) return;
         parent.replaceChild(container, link);
 
-        const showFallback = (timeout: ReturnType<typeof setTimeout>) => {
-            clearTimeout(timeout);
-            iframe.style.display = "none";
-            fallback.classList.add("is-visible");
+        // Lazily create fallback card only when needed
+        let fallback: HTMLElement | null = null;
+        const ensureFallback = () => {
+            if (!fallback) {
+                fallback = this.createFallbackCard(fileName, fileType, figmaUrl);
+                container.appendChild(fallback);
+            }
+            return fallback;
+        };
+
+        const cleanup = () => {
+            clearInterval(cleanupInterval);
+            clearTimeout(fallbackTimeout);
             window.removeEventListener("message", messageHandler);
         };
 
-        const showEmbed = (timeout: ReturnType<typeof setTimeout>) => {
-            clearTimeout(timeout);
-            iframe.style.display = "";
-            fallback.classList.remove("is-visible");
-            window.removeEventListener("message", messageHandler);
+        const resolve = (showEmbed: boolean) => {
+            cleanup();
+            if (showEmbed) {
+                iframe.style.display = "";
+                if (fallback) fallback.classList.remove("is-visible");
+            } else {
+                iframe.style.display = "none";
+                ensureFallback().classList.add("is-visible");
+            }
         };
 
         // Figma sends plain strings (e.g. "INITIAL_LOAD") or JSON objects with a .type field
         const messageHandler = (event: MessageEvent) => {
-            if (event.origin !== "https://www.figma.com") return;
+            if (event.origin !== FIGMA_ORIGIN) return;
             if (event.source !== iframe.contentWindow) return;
 
             const data = event.data;
             const eventType = typeof data === "string" ? data : data?.type;
 
             if (eventType === "INITIAL_LOAD" || eventType === "EMBED_LOADED") {
-                showEmbed(fallbackTimeout);
+                resolve(true);
             } else if (eventType === "LOGIN_SCREEN_SHOWN") {
-                showFallback(fallbackTimeout);
+                resolve(false);
             }
         };
 
@@ -117,27 +116,19 @@ export default class FigmaEmbedPlugin extends Plugin {
         // Safety net: if Figma doesn't respond (network error, outage, etc.), show fallback.
         // Keep the listener active so a late-loading embed can still recover.
         const fallbackTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
-            if (!fallback.classList.contains("is-visible") && iframe.style.display !== "none") {
+            if (iframe.style.display !== "none") {
                 iframe.style.display = "none";
-                fallback.classList.add("is-visible");
+                ensureFallback().classList.add("is-visible");
             }
         }, FALLBACK_TIMEOUT_MS);
 
         // Self-cleanup: remove handler when iframe leaves the DOM (e.g. note navigation)
         const cleanupInterval = setInterval(() => {
-            if (!iframe.isConnected) {
-                clearInterval(cleanupInterval);
-                clearTimeout(fallbackTimeout);
-                window.removeEventListener("message", messageHandler);
-            }
+            if (!iframe.isConnected) cleanup();
         }, 2000);
 
         // Also clean up on plugin unload
-        this.register(() => {
-            clearInterval(cleanupInterval);
-            clearTimeout(fallbackTimeout);
-            window.removeEventListener("message", messageHandler);
-        });
+        this.register(cleanup);
     }
 
     private createFallbackCard(fileName: string, fileType: string, figmaUrl: string): HTMLElement {
