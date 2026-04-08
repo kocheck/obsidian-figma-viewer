@@ -33,14 +33,14 @@ The Obsidian Figma Embed plugin allows you to seamlessly integrate Figma designs
 ## Usage
 
 1. Make sure your Figma file's sharing permissions are set to "Anyone with the link can view."
-2. Copy a Figma link (e.g., https://www.figma.com/file/...)
+2. Copy a Figma link (e.g., https://www.figma.com/design/...)
 3. Paste the link into your Obsidian note.
 4. The plugin will automatically convert the link into an embedded preview.
 5. Switch to Read mode in Obsidian to view and interact with the embedded Figma design.
 
 ## Known Limitations
 
-This plugin embeds Figma files using iframes. Figma's embed system relies on browser cookies to maintain authentication, but Obsidian's webview can't persist those cookies across reloads or mode switches. This means private file embeds get stuck in a login loop that can't be resolved from within Obsidian.
+This plugin embeds Figma files using iframes. Figma's embed system relies on browser cookies to maintain authentication, but Obsidian's webview can't persist those cookies across reloads or mode switches. This means private file embeds get stuck in a login loop that can't be authenticated from within Obsidian.
 
 As of v1.0.4, the plugin shows a graceful fallback card with file info and a link to open in your browser when an embed fails to load. This doesn't solve the underlying cookie issue — the file must be publicly shared.
 
